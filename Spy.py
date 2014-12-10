@@ -33,7 +33,13 @@ class Spy(irc.bot.SingleServerIRCBot):
 		context.join(self.channel)
 
 	def on_join(self, context, event):
-			_SHARED['origin']['context'].action(target.event+"-teddy", "{0} has joined {1}.".format(event.source, event.target));
+			_SHARED['origin']['context'].action(event.target+"-teddy", "{0} has joined.".format(event.source));
+
+	def on_part(self, context, event):
+			user = event.source.split("!")[0]
+			_SHARED['origin']['context'].action(event.target+"-teddy", "{0} has left.".format(user));
+
+	def on_quit(self, context, event):
 		pass
 
 	def on_pubmsg(self, context, event):
@@ -56,10 +62,13 @@ class Spy(irc.bot.SingleServerIRCBot):
 		return True
 
 	def understand(self, context, event):
-		if not self.is_owner(context, event):
+		my_owner = self.is_owner(context, event)
+		if not my_owner:
 			return
 		if self.server == _SHARED['origin']['server']:
-			if event.target == _SHARED['origin']['channel']:
+			if event.target == _SHARED['origin']['channel'] or my_owner or event.target+"-teddy" in self.channels.keys():
+				if my_owner and event.target == _SHARED['nickname']:
+					event.target = event.source.split("!")[0]
 				text = event.arguments[0]
 				chunks = text.split(" ")
 				for command in _SHARED['_COMMANDS']:
@@ -83,8 +92,8 @@ class Spy(irc.bot.SingleServerIRCBot):
 		if self.in_channel(server, channel):
 			return
 
-		context.action(self.channel, "joining {0} {1}".format(server, channel))
-		context.action(self.channel, "relay channel @ {0}-teddy".format(channel))
+		context.action(event.target, "joining {0} {1}".format(server, channel))
+		context.action(event.target, "relay channel @ {0}-teddy".format(channel))
 	
 		context.join(channel+"-teddy")
 		self.connect_to(server, channel)
@@ -102,6 +111,21 @@ class Spy(irc.bot.SingleServerIRCBot):
 			return
 		return
 
+	def assimilate(self, context, event):
+		arguments = self.get_args(event)
+		if len(arguments) != 4:
+			context.action(self.channel, "Format: :assimilate irc.server.tld #channel msg")
+			return
+
+		server = arguments[1]
+		channel = arguments[2]
+		msg = arguments[3]
+
+		if not self.in_channel(server, channel):
+			return
+	
+		_SHARED['servers'][server]['context'].privmsg(channel, msg)	
+
 	def users(self, context, event):
 		arguments = self.get_args(event)
 		if len(arguments) != 3:
@@ -116,7 +140,7 @@ class Spy(irc.bot.SingleServerIRCBot):
 			return
 
 		users = str(list(_SHARED['servers'][server]['channels'][channel].users()))
-		context.action(_SHARED['origin']['channel'], "{0}".format(users))
+		context.action(event.target, "{0}".format(users))
 
 	def commands(self, context, event):
 		context.privmsg(self.channel, "Commands: {0}".format(str(_SHARED['_COMMANDS'])))
@@ -138,7 +162,7 @@ class Spy(irc.bot.SingleServerIRCBot):
 							if existing_channel == channel:
 								_SHARED['servers'][existing_server]['context'].part(channel)
 								context.part(channel+"-teddy")
-								context.action(_SHARED['origin']['channel'], "retreated from {0} {1}".format(channel, server))
+								context.action(event.target, "retreated from {0} {1}".format(channel, server))
 								return 
 					
 		if server is not None:
@@ -148,10 +172,10 @@ class Spy(irc.bot.SingleServerIRCBot):
 					for channel in _SHARED['servers'][existing_server]['channels'].keys():
 						context.part(channel+"-teddy")
 					_SHARED['servers'][existing_server]['context'].disconnect()
-					context.action(_SHARED['origin']['channel'], "retreated from {0}".format(server))
+					context.action(event.target, "retreated from {0}".format(server))
 					return
 
-		context.privmsg(_SHARED['origin']['channel'], "Invalid invocation or not there.")
+		context.privmsg(event.target, "Invalid invocation or not there.")
 
 	def connect_to(self, requested_server, channel):
 		for existing_server in _SHARED['servers'].keys():
