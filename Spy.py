@@ -33,8 +33,7 @@ class Spy(irc.bot.SingleServerIRCBot):
 		context.join(self.channel)
 
 	def on_join(self, context, event):
-		if "-teddy" not in event.target:
-			_SHARED['origin']['context'].action(_SHARED['origin']['channel'], "successfully infiltrated {0}.".format(event.target));
+			_SHARED['origin']['context'].action(target.event+"-teddy", "{0} has joined {1}.".format(event.source, event.target));
 		pass
 
 	def on_pubmsg(self, context, event):
@@ -52,12 +51,12 @@ class Spy(irc.bot.SingleServerIRCBot):
 
 	def is_owner(self, context, event):
 		user = event.source.split("!")[0]
-		if user != self.owner:
+		if user != _SHARED['owner']:
 			return False
 		return True
 
 	def understand(self, context, event):
-		if not is_owner(context, event):
+		if not self.is_owner(context, event):
 			return
 		if self.server == _SHARED['origin']['server']:
 			if event.target == _SHARED['origin']['channel']:
