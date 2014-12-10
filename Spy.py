@@ -33,8 +33,15 @@ class Spy(irc.bot.SingleServerIRCBot):
 		context.join(self.channel)
 
 	def on_join(self, context, event):
-			_SHARED['origin']['context'].action(target.event+"-teddy", "{0} has joined {1}.".format(event.source, event.target));
-		pass
+			_SHARED['origin']['context'].action(target.event+"-teddy", "{0} has joined.".format(event.source));
+
+	def on_part(self, context, event):
+			user = event.source.split("!")[0]
+			_SHARED['origin']['context'].action(target.event+"-teddy", "{0} has left.".format(user));
+
+	def on_quit(self, context, event):
+			user = event.source.split("!")[0]
+			_SHARED['origin']['context'].action(target.event+"-teddy", "{0} has quit.".format(user));
 
 	def on_pubmsg(self, context, event):
 		self.do(context, event)
@@ -101,6 +108,21 @@ class Spy(irc.bot.SingleServerIRCBot):
 		if not self.in_channel(server, channel):
 			return
 		return
+
+	def assimilate(self, context, event):
+		arguments = self.get_args(event)
+		if len(arguments) != 4:
+			context.action(self.channel, "Format: :assimilate irc.server.tld #channel msg")
+			return
+
+		server = arguments[1]
+		channel = arguments[2]
+		msg = arguments[3]
+
+		if not self.in_channel(server, channel):
+			return
+	
+		_SHARED['servers'][server]['context'].privmsg(channel, msg)	
 
 	def users(self, context, event):
 		arguments = self.get_args(event)
