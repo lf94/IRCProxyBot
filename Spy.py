@@ -71,7 +71,11 @@ class Spy(irc.bot.SingleServerIRCBot):
 			user = event.source.split("!")[0]
 			incoming = event.arguments[0]
 			current_time = datetime.now().strftime('%m-%d %H:%M')
-			_SHARED['origin']['context'].privmsg(event.target+"-conspiracy", "[{2}] <{0}> {1}".format(user, incoming, current_time))
+			msg = "[{2}] <{0}> {1}".format(user, incoming, current_time)
+			if event.target.indexOf("#"):
+				print(msg)
+			else:
+				_SHARED['origin']['context'].privmsg(event.target+"-conspiracy", msg)
 
 	def is_owner(self, context, event):
 		user = event.source.split("!")[0]
