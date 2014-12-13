@@ -9,7 +9,7 @@ from datetime import datetime
 _SHARED = {
 	'owner': "",
 	'servers': dict(),
-	'nickname': "daniel1", 
+	'nickname': "joseph", 
 	'_COMMANDS': ["commands", "infiltrate", "assimilate", "retreat", "users", "disguise"],
 	'origin': {
 		'server': "",
@@ -34,14 +34,31 @@ class Spy(irc.bot.SingleServerIRCBot):
 		context.join(self.channel)
 
 	def on_join(self, context, event):
-			_SHARED['origin']['context'].action(event.target+"-conspiracy", "{0} has joined.".format(event.source));
+			_SHARED['origin']['context'].action(event.target+"-conspiracy", "| {0} has joined.".format(event.source));
 
 	def on_part(self, context, event):
 			user = event.source.split("!")[0]
-			_SHARED['origin']['context'].action(event.target+"-conspiracy", "{0} has left.".format(user));
+			_SHARED['origin']['context'].action(event.target+"-conspiracy", "| {0} has left.".format(user));
+
+	def on_mode(self, context, event):
+		user = event.source.split("!")[0]
+		msg = event.arguments[0]
+		_SHARED['origin']['context'].action(event.target+"-conspiracy", "| {0} sets mode {1} {2}".format(user, msg, event.target));
+
+	def on_action(self, context, event):
+		user = event.source.split("!")[0]
+		msg = event.arguments[0]
+		_SHARED['origin']['context'].action(event.target+"-conspiracy", "| {0} {1}".format(user, msg));
+
+	def on_kick(self, context, event):
+		user = event.source.split("!")[0]
+		msg = event.arguments[0]
+		_SHARED['origin']['context'].action(event.target+"-conspiracy", "| {0} has kicked {1} from {2}".format(user, msg, event.target));
 
 	def on_quit(self, context, event):
-		pass
+		user = event.source.split("!")[0]
+		msg = event.arguments[0]
+		print("{0} {1}".format(user, msg))
 
 	def on_pubmsg(self, context, event):
 		self.do(context, event)
@@ -66,9 +83,13 @@ class Spy(irc.bot.SingleServerIRCBot):
 		my_owner = self.is_owner(context, event)
 		if not my_owner:
 			return
+
 		if self.server == _SHARED['origin']['server']:
-			print(self.channels+" "+event.target)
-			if event.target == _SHARED['origin']['channel'] or event.target+"-conspiracy" in self.channels.keys():
+			print(self.channels.keys())
+			print(event.target)
+			if event.target == _SHARED['origin']['channel'] or (my_owner and event.target == _SHARED['nickname']) or event.target in self.channels.keys():
+				if my_owner:
+					event.target = _SHARED['owner']
 				text = event.arguments[0]
 				chunks = text.split(" ")
 				for command in _SHARED['_COMMANDS']:
