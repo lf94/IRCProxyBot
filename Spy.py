@@ -9,19 +9,21 @@ from datetime import datetime
 _SHARED = {
 	'owner': "",
 	'servers': dict(),
-	'nickname': "joseph", 
+	'nickname': "daniel1", 
 	'_COMMANDS': ["commands", "infiltrate", "assimilate", "retreat", "users", "disguise"],
 	'origin': {
 		'server': "",
 		'channel': "",
+		'key': "",
 		'context': None,
 	}
 }
 
 class Spy(irc.bot.SingleServerIRCBot):
-	def __init__(self, server, channel, port):
+	def __init__(self, server, channel, key, port):
 		self.server = server
 		self.channel = channel
+		self.key = key
 		irc.bot.SingleServerIRCBot.__init__(self, [(server,port)], _SHARED['nickname'], _SHARED['nickname'])
 
 	def on_welcome(self, context, event):
@@ -31,7 +33,7 @@ class Spy(irc.bot.SingleServerIRCBot):
 			_SHARED['servers'][self.server] = dict()
 			_SHARED['servers'][self.server]['channels'] = self.channels
 			_SHARED['servers'][self.server]['context'] = context
-		context.join(self.channel)
+		context.join(self.channel, self.key)
 
 	def on_join(self, context, event):
 			_SHARED['origin']['context'].action(event.target+"-conspiracy", "| {0} has joined.".format(event.source));
@@ -85,10 +87,8 @@ class Spy(irc.bot.SingleServerIRCBot):
 			return
 
 		if self.server == _SHARED['origin']['server']:
-			print(self.channels.keys())
-			print(event.target)
 			if event.target == _SHARED['origin']['channel'] or (my_owner and event.target == _SHARED['nickname']) or event.target in self.channels.keys():
-				if my_owner:
+				if my_owner and event.target == _SHARED['nickname']:
 					event.target = _SHARED['owner']
 				text = event.arguments[0]
 				chunks = text.split(" ")
@@ -103,12 +103,16 @@ class Spy(irc.bot.SingleServerIRCBot):
 
 	def infiltrate(self, context, event):
 		arguments = self.get_args(event)
-		if len(arguments) != 3:
-			context.action(self.channel, "Format: :infiltrate irc.server.tld #channel")
+		if len(arguments) < 3:
+			context.action(self.channel, "Format: :infiltrate irc.server.tld #channel (key)")
 			return
 
 		server = arguments[1]
 		channel = arguments[2]
+		if len(arguments) > 3:
+			key = arguments[3]
+		else:
+			key = ''
 
 		if self.in_channel(server, channel):
 			return
@@ -117,7 +121,7 @@ class Spy(irc.bot.SingleServerIRCBot):
 		context.action(event.target, "relay channel @ {0}-conspiracy".format(channel))
 	
 		context.join(channel+"-conspiracy")
-		self.connect_to(server, channel)
+		self.connect_to(server, channel, key)
 
 	def disguise(self, context, event):
 		arguments = self.get_args(event)
@@ -198,13 +202,13 @@ class Spy(irc.bot.SingleServerIRCBot):
 
 		context.privmsg(event.target, "Invalid invocation or not there.")
 
-	def connect_to(self, requested_server, channel):
+	def connect_to(self, requested_server, channel, key):
 		for existing_server in _SHARED['servers'].keys():
 			if existing_server == requested_server:
-				_SHARED['servers'][existing_server]['context'].join(channel)
+				_SHARED['servers'][existing_server]['context'].join(channel, key)
 				return
 
-		bot = Spy(requested_server, channel, 6667)
+		bot = Spy(requested_server, channel, key, 6667)
 		threading.Thread(group=None, target=bot.start).start()
 
 	def in_channel(self, server, channel):
@@ -219,6 +223,8 @@ def main():
 	_SHARED['owner'] = sys.argv[1];
 	_SHARED['origin']['server'] = sys.argv[2]
 	_SHARED['origin']['channel'] = sys.argv[3]
-	Spy(_SHARED['origin']['server'], _SHARED['origin']['channel'], 6667).start()
+	if len(sys.argv) > 4:
+		_SHARED['origin']['key'] = sys.argv[4]
+	Spy(_SHARED['origin']['server'], _SHARED['origin']['channel'], _SHARED['origin']['key'], 6667).start()
 
 main()
