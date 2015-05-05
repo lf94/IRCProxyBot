@@ -1,8 +1,6 @@
-# Spy
+# IRCProxy
 
-## An IRC spy-bot. MI6 is back baby!
-
-This program was created for educational purposes only.
+## An IRC proxy bot. MI6 is back baby!
 
 This is an example of how to use threads in Python 3.
 

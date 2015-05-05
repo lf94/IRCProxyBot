@@ -19,7 +19,7 @@ _SHARED = {
 	}
 }
 
-class Spy(irc.bot.SingleServerIRCBot):
+class IRCProxy(irc.bot.SingleServerIRCBot):
 	def __init__(self, server, channel, key, port):
 		self.server = server
 		self.channel = channel
@@ -164,11 +164,11 @@ class Spy(irc.bot.SingleServerIRCBot):
 		server = arguments[1]
 		channel = arguments[2]
 
-
 		if not self.in_channel(server, channel):
 			return
 
 		users = str(list(_SHARED['servers'][server]['channels'][channel].users()))
+
 		context.action(event.target, "{0}".format(users))
 
 	def commands(self, context, event):
@@ -212,7 +212,7 @@ class Spy(irc.bot.SingleServerIRCBot):
 				_SHARED['servers'][existing_server]['context'].join(channel, key)
 				return
 
-		bot = Spy(requested_server, channel, key, 6667)
+		bot = IRCProxy(requested_server, channel, key, 6667)
 		threading.Thread(group=None, target=bot.start).start()
 
 	def in_channel(self, server, channel):
@@ -229,6 +229,6 @@ def main():
 	_SHARED['origin']['channel'] = sys.argv[3]
 	if len(sys.argv) > 4:
 		_SHARED['origin']['key'] = sys.argv[4]
-	Spy(_SHARED['origin']['server'], _SHARED['origin']['channel'], _SHARED['origin']['key'], 6667).start()
+	IRCProxy(_SHARED['origin']['server'], _SHARED['origin']['channel'], _SHARED['origin']['key'], 6667).start()
 
 main()
